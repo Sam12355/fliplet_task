@@ -14,6 +14,7 @@ It comes with a React chat UI, an Express backend that keeps your API keys safe,
 - **React chat UI** with a responsive layout built on Tailwind CSS
 - **REST API backend** with Express, session management, and security hardening
 - **CLI interface** for quick terminal testing
+- **Scope restricted** so the chatbot only answers questions about your Fliplet app's data and files, politely declining anything off topic
 - **Error handling** where API errors get explained by the AI in plain language
 - **171 tests** covering the full stack with Jest (backend) and Vitest + RTL (frontend)
 
@@ -105,11 +106,11 @@ fliplet-ai-chatbot/
 ## Prerequisites
 
 - **Node.js** >= 18.0.0 (needs built in `fetch`). Check with `node -v`
-- **OpenAI API key** from https://platform.openai.com/api-keys (billing needs to be enabled)
-- **Fliplet API token** from Fliplet Studio > Your Profile > API Tokens, or run `npm run refresh-token`
+- **OpenAI API key** from https://platform.openai.com/api-keys (already added)
+- **Fliplet API token** from Fliplet Studio > Profile > API Tokens, or run `npm run refresh-token`
 - **Fliplet App ID** from the URL in Fliplet Studio: `studio.fliplet.com/app/<APP_ID>`
 
-> **About token expiration:** Fliplet session tokens can expire after inactivity. If you see 401 errors, just run `npm run refresh-token` and it will authenticate and update the `.env` file for you.
+> **About token expiration:** Fliplet session tokens can expire after inactivity. If you see 401 errors, just run `npm run refresh-token` and it will authenticate and update the `.env` file.
 
 ## Setup
 
@@ -289,7 +290,7 @@ npm start
       - report.pdf (application/pdf, 2.1MB)
 
   You: exit
-  Goodbye! 👋
+  Goodbye!
 ```
 
 ### CLI Commands
@@ -332,6 +333,107 @@ These are the tools the AI can call to interact with your Fliplet app:
 | **Factory Pattern** (cli.js) | Single composition root keeps all the wiring logic in one place |
 | **Error as Data** (ToolExecutor) | API errors get returned as structured objects so the AI can read and explain them to the user |
 | **Provider Agnostic** | ChatEngine accepts any OpenAI compatible client which makes it easy to swap models later |
+
+## Applied Best Practices
+
+The project went through a full audit across API, frontend, and backend layers. Here is what was checked and what ended up in the final codebase.
+
+### API (14/14 passed)
+
+| Practice | Status | Details |
+|----------|--------|---------|
+| RESTful endpoint design | Passed | Clean `/api/chat`, `/api/reset`, `/api/health` with correct HTTP methods and naming |
+| Input validation and sanitization | Passed | Message type, emptiness, length (4000 char cap), control character stripping, UUID session ID format |
+| Consistent error response format | Passed | Every error returns `{ error: "..." }` with the right status code |
+| Rate limiting | Passed | 30 requests per minute on `/api/chat` via express rate limit with standard headers |
+| Request/response content types | Passed | JSON parsing with `express.json()`, proper `Content-Type` on all outbound calls |
+| Proper HTTP status codes | Passed | 200 (success), 400 (validation), 404 (not found), 429 (rate limit), 500 (server error) |
+| Documentation | Passed | Full README with architecture, endpoint reference, tool docs, troubleshooting |
+| Pagination support | Passed | `getDataSourceEntries()` accepts `limit` and `offset` passed through the AI tool schema |
+| CORS configuration | Passed | Allowlist of specific origins (localhost:5173 and localhost:3000), not a wildcard |
+| Request size limits | Passed | `express.json({ limit: '100kb' })` plus 4000 character message cap |
+| Timeout handling | Passed | 30s AbortController on Fliplet API calls, 60s timeout on frontend fetch |
+| Health check endpoint | Passed | `GET /api/health` returns `{ status: "ok" }` |
+| Request correlation IDs | Passed | `crypto.randomUUID()` per request, logged with errors for tracing |
+| Scope restriction | Passed | System prompt enforces that the AI only answers Fliplet app data questions and politely declines everything else |
+
+### Frontend (14/14 passed)
+
+| Practice | Status | Details |
+|----------|--------|---------|
+| Component composition | Passed | Clean tree: App (state) > ChatWindow (layout) > MessageList / MessageInput / TypingIndicator / ChatMessage |
+| State management | Passed | State lifted to App.jsx, passed down as props with no prop drilling issues |
+| React hooks | Passed | `useCallback` with correct deps, `useEffect` deps array correct, `useRef` for scroll and focus |
+| Accessibility | Passed | `aria-label` on all interactive elements, `role="list"` / `role="listitem"` / `role="status"` / `role="alert"`, keyboard navigation with focus rings |
+| Error boundary | Passed | `ErrorBoundary` class component catches render time crashes and shows a recovery UI |
+| Loading states | Passed | Typing indicator, disabled input, changed placeholder text, optimistic user message rendering |
+| Responsive design | Passed | Tailwind responsive classes, `max-w-2xl`, `h-[90vh]`, scrollable table wrapper for wide tables |
+| Performance | Passed | `React.memo` on ChatMessage and TypingIndicator to prevent unnecessary re renders |
+| PropTypes | Passed | Runtime type checking on all components with `prop-types` |
+| CSS methodology | Passed | Utility first Tailwind with custom styles organized in `index.css` (scrollbar, prose, animations) |
+| Testing | Passed | 43 tests covering unit, integration, and service layer with React Testing Library patterns |
+| Build tooling | Passed | Vite with React plugin, dev proxy to backend, Vitest with jsdom, PostCSS + Tailwind pipeline |
+| Form handling | Passed | Controlled textarea, trim on submit, empty check, Enter/Shift+Enter, auto resize, clear after send |
+| XSS prevention | Passed | `react-markdown` renders to React elements (not dangerouslySetInnerHTML), user messages rendered as plain text |
+
+### Backend (22/22 passed)
+
+| Practice | Status | Details |
+|----------|--------|---------|
+| Dependency injection | Passed | Every class takes dependencies through constructor: `ChatEngine({openai, toolExecutor, tools})`, `FlipletApiClient(config, fetchFn)`, `SessionManager(engineFactory)` |
+| Separation of concerns | Passed | HTTP layer (server.js) is pure routing, chat-engine.js is orchestration, fliplet-client.js is I/O, tool-executor.js is dispatch |
+| Design patterns | Passed | Strategy pattern in ToolExecutor dispatch map, Factory pattern in SessionManager and createApp composition root |
+| Environment management | Passed | Centralized in config.js with dotenv, validation, fail fast on missing vars, `.env.example` provided |
+| Immutable configuration | Passed | `Object.freeze(config)` prevents accidental mutation after load |
+| Custom error classes | Passed | `FlipletApiError` extends Error with `statusCode` and `responseBody` |
+| Centralized error handling | Passed | Express error middleware catches all unhandled errors, logs full stack server side, returns generic message to client |
+| Graceful shutdown | Passed | SIGTERM and SIGINT handlers stop cleanup, drain connections, force exit after 10s |
+| Session management | Passed | 30 minute TTL, 100 max sessions, LRU eviction, periodic cleanup every 5 minutes |
+| Memory leak prevention | Passed | Sliding window history (50 messages), session TTL + cap, cleanup interval uses `.unref()` |
+| Security headers | Passed | Helmet middleware adds X-Content-Type-Options, X-Frame-Options, HSTS, CSP defaults |
+| Rate limiting | Passed | 30 req/min on `/api/chat` with standard headers |
+| Request body limits | Passed | 100kb JSON limit plus 4000 character message cap |
+| Input validation | Passed | Message type/empty/length, UUID session ID format, dataSourceId/fileId presence checks, URL format validation on config |
+| Testability | Passed | All dependencies injectable, 128 backend tests with pure mocks, no real network calls |
+| No circular dependencies | Passed | Strictly layered: config > fliplet-client > tool-executor > chat-engine > server. No cycles |
+| Module exports | Passed | Named exports everywhere (`{ ChatEngine }`, `{ createServer }`, `{ tools, getToolByName }`) |
+| Signal handling | Passed | Both SIGTERM and SIGINT handled in start-server.js |
+| Shared stateless clients | Passed | OpenAI, FlipletApiClient, and ToolExecutor created once, reused across all sessions |
+| Error as data for AI | Passed | ToolExecutor never throws on API errors, returns `{ error: true, message }` so the AI can read and explain it |
+| Max iteration guard | Passed | `DEFAULT_MAX_ITERATIONS = 10` prevents infinite tool call loops |
+| `createServer()` testability | Passed | Returns Express app without calling `.listen()`, so Supertest can test it directly |
+
+### Scope: 50/50 checks passed
+
+## Built With Claude Code
+
+This project was built using **Claude Code** (Anthropic's AI coding agent) as the primary development tool, guided step by step through every decision.
+
+The approach was not "generate the whole thing and hope for the best." It was planned and directed like a real software project, with me making the architectural calls and Claude handling the implementation under my guidance.
+
+### How I Planned and Directed the Build
+
+**Requirements gathering first.** Before writing any code, I broke the task down into what it actually needed: a way to talk to Fliplet's REST API, an AI layer that could decide which endpoints to call, a backend to keep API keys secure, and a frontend for the recruiter to interact with. That gave me the 11 step build plan.
+
+**Architecture decisions were mine.** I chose dependency injection over hardcoded imports. I chose the Strategy pattern for tool dispatch. I chose to separate the HTTP layer from business logic so everything stays testable. I chose Express 5 with a composition root pattern. Claude implemented what I designed.
+
+**TDD was enforced throughout.** Every step followed the same cycle: write the tests first, watch them fail, implement just enough to make them pass, commit. I did not let the AI skip tests or write implementation before the test suite existed. This is why there are 171 tests and not zero.
+
+**Incremental delivery, not big bang.** The CLI worked standalone as v1.0.0 before the backend or frontend existed. The backend was tested independently before the React UI touched it. Each layer proved itself before the next one started.
+
+**Security and hardening were deliberate.** After the core was working, I ran a full audit across API, frontend, and backend practices. I identified 44 issues across the codebase, prioritized them by impact, and directed fixes in two rounds until all 50 checks passed.
+
+**Scope restriction was a conscious choice.** I decided the chatbot should only answer questions about the configured Fliplet app's data. If someone asks it to write code or answer general knowledge questions, it politely declines. This was done through system prompt engineering, not by limiting the model.
+
+### What This Demonstrates
+
+- **Planning** what to build and in what order
+- **Architecture** decisions that affect testability, maintainability, and security
+- **Quality gates** like TDD, code audits, and incremental validation
+- **Prioritization** when issues come up (fix the security holes before adding polish)
+- **Understanding the full SDLC** from requirements through testing, deployment, and documentation
+
+The git history reflects this process. Every commit follows conventional commit format, each step builds on the last, and the test count grows with every commit because nothing shipped without tests.
 
 ## Tech Stack
 
@@ -382,9 +484,3 @@ Each step was built using Test Driven Development (red, green, commit):
 | Frontend shows "Network Error" | Make sure the backend is running first on port 3000 |
 | Fliplet API returns 401 | Your token probably expired. Run `npm run refresh-token` to get a fresh one |
 | `crypto.randomUUID is not a function` | Use a modern browser and access via `localhost` (needs a secure context) |
-
-> The example session above shows illustrative output. Actual results depend on the data in your configured Fliplet app.
-
-## License
-
-ISC
