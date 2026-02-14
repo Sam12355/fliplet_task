@@ -47,7 +47,7 @@ export default function ChatMessage({ role, content }) {
           <p className="whitespace-pre-wrap break-words">{content}</p>
         ) : (
           // AI messages rendered as Markdown
-          <div className="prose-chat whitespace-pre-wrap break-words">
+          <div className="prose-chat break-words">
             <ReactMarkdown>{content}</ReactMarkdown>
           </div>
         )}
