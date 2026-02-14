@@ -1,0 +1,31 @@
+{
+  "name": "fliplet-ai-chatbot",
+  "version": "1.0.0",
+  "description": "AI chatbot that interacts with the Fliplet REST API via tool calling to answer questions about data sources and files for a specific app.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "jest --verbose",
+    "test:watch": "jest --watch --verbose",
+    "test:coverage": "jest --coverage --verbose"
+  },
+  "keywords": [
+    "fliplet",
+    "ai",
+    "chatbot",
+    "openai",
+    "tool-calling"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "openai": "^6.22.0"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0"
+  }
+}
