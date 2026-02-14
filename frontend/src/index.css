@@ -63,8 +63,13 @@
 }
 
 /* Tables — clean, compact, alternating rows */
+.prose-chat .table-wrap {
+  @apply overflow-x-auto mb-3;
+}
+
 .prose-chat table {
-  @apply w-full text-sm border-collapse mb-3 rounded-lg overflow-hidden;
+  @apply w-full text-sm border-collapse rounded-lg overflow-hidden;
+  min-width: 400px;
 }
 
 .prose-chat thead th {

@@ -9,6 +9,17 @@
  */
 
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+// Custom component overrides for react-markdown.
+// Wraps <table> in a scrollable container so wide tables don't overflow.
+const markdownComponents = {
+  table: ({ children }) => (
+    <div className="table-wrap">
+      <table>{children}</table>
+    </div>
+  ),
+};
 
 /**
  * @param {object} props
@@ -36,10 +47,10 @@ export default function ChatMessage({ role, content }) {
 
       {/* Bubble */}
       <div
-        className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${
+        className={`rounded-2xl px-4 py-3 shadow-sm ${
           isUser
-            ? 'bg-primary-600 text-white rounded-tr-sm'
-            : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
+            ? 'max-w-[75%] bg-primary-600 text-white rounded-tr-sm'
+            : 'max-w-[90%] bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
         }`}
       >
         {isUser ? (
@@ -48,7 +59,7 @@ export default function ChatMessage({ role, content }) {
         ) : (
           // AI messages rendered as Markdown
           <div className="prose-chat break-words">
-            <ReactMarkdown>{content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{content}</ReactMarkdown>
           </div>
         )}
       </div>
