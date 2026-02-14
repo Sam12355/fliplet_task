@@ -24,6 +24,9 @@ function loadConfig() {
     flipletApiToken: process.env.FLIPLET_API_TOKEN,
     flipletAppId: process.env.FLIPLET_APP_ID,
     flipletApiUrl: process.env.FLIPLET_API_URL || 'https://api.fliplet.com',
+
+    // Server settings
+    port: parseInt(process.env.PORT, 10) || 3000,
   };
 
   // Validate required fields
