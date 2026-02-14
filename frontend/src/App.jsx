@@ -85,6 +85,9 @@ export default function App() {
     setError(null);
   }, [sessionId]);
 
+  /** Dismiss the error banner */
+  const handleDismissError = useCallback(() => setError(null), []);
+
   // ---------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------
@@ -98,6 +101,7 @@ export default function App() {
           onSend={handleSend}
           onReset={handleReset}
           error={error}
+          onDismissError={handleDismissError}
         />
       </div>
     </main>

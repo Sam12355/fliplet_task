@@ -18,8 +18,9 @@ import MessageInput from './MessageInput';
  * @param {(message: string) => void} props.onSend - Send message handler
  * @param {() => void} props.onReset - Reset conversation handler
  * @param {string|null} props.error - Current error message (if any)
+ * @param {() => void} [props.onDismissError] - Dismiss error banner handler
  */
-export default function ChatWindow({ messages, isLoading, onSend, onReset, error }) {
+export default function ChatWindow({ messages, isLoading, onSend, onReset, error, onDismissError }) {
   return (
     <div className="flex flex-col h-full bg-gray-50 rounded-2xl shadow-xl overflow-hidden border border-gray-200">
       {/* Header */}
@@ -65,15 +66,24 @@ export default function ChatWindow({ messages, isLoading, onSend, onReset, error
       {/* Error banner */}
       {error && (
         <div
-          className="mx-4 mt-3 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
+          className="mx-4 mt-3 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center justify-between"
           role="alert"
         >
-          <strong>Error:</strong> {error}
+          <span><strong>Error:</strong> {error}</span>
+          {onDismissError && (
+            <button
+              onClick={onDismissError}
+              className="ml-3 text-red-500 hover:text-red-700 focus:outline-none"
+              aria-label="Dismiss error"
+            >
+              &times;
+            </button>
+          )}
         </div>
       )}
 
       {/* Message list (scrollable) */}
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList messages={messages} isLoading={isLoading} onSuggestionClick={onSend} />
 
       {/* Input bar (pinned to bottom) */}
       <MessageInput onSend={onSend} disabled={isLoading} />

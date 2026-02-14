@@ -446,7 +446,7 @@ describe('ChatEngine', () => {
   // ---------------------------------------------------------------
 
   describe('error handling', () => {
-    test('should throw a meaningful error if OpenAI API call fails', async () => {
+    test('should return a user-friendly message if OpenAI API call fails', async () => {
       const mockCreate = jest.fn().mockRejectedValue(new Error('API rate limit exceeded'));
       const mockOpenAI = createMockOpenAI(mockCreate);
       const mockExecutor = createMockExecutor();
@@ -457,7 +457,9 @@ describe('ChatEngine', () => {
         tools: [],
       });
 
-      await expect(engine.chat('Hello')).rejects.toThrow('API rate limit exceeded');
+      // Should resolve with a user-friendly message instead of throwing
+      const result = await engine.chat('Hello');
+      expect(result).toContain('error communicating with the AI service');
     });
   });
 });

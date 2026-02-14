@@ -80,6 +80,10 @@ class FlipletApiClient {
     // Build the full URL by combining base URL and path
     const url = `${this.baseUrl}${path}`;
 
+    // Set a 30-second timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     // Configure request options with auth and content headers
     const options = {
       method,
@@ -87,6 +91,7 @@ class FlipletApiClient {
         'Auth-token': this.token,
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
     };
 
     // Attach body for POST/PUT/PATCH requests
@@ -94,11 +99,32 @@ class FlipletApiClient {
       options.body = JSON.stringify(body);
     }
 
-    // Execute the HTTP request
-    const response = await this._fetch(url, options);
+    let response;
+    try {
+      // Execute the HTTP request
+      response = await this._fetch(url, options);
+    } catch (fetchError) {
+      clearTimeout(timeout);
+      // Translate AbortError into a user-friendly timeout message
+      if (fetchError.name === 'AbortError') {
+        throw new FlipletApiError('Fliplet API request timed out after 30 seconds', 0, {});
+      }
+      throw fetchError;
+    }
 
-    // Parse response body (attempt JSON regardless of status)
-    const data = await response.json();
+    clearTimeout(timeout);
+
+    // Parse response body (safely handle non-JSON responses like HTML error pages)
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new FlipletApiError(
+        `Fliplet API returned non-JSON response: ${response.status} ${response.statusText} — ${url}`,
+        response.status,
+        {}
+      );
+    }
 
     // Throw custom error for non-2xx responses
     if (!response.ok) {

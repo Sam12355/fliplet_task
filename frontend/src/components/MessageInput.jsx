@@ -8,7 +8,7 @@
  * Uses controlled input pattern with local state for the draft message.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 /**
  * @param {object} props
@@ -26,6 +26,14 @@ export default function MessageInput({ onSend, disabled }) {
     }
   }, [disabled]);
 
+  // Auto-resize textarea to fit content (up to 5 rows)
+  const autoResize = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }, []);
+
   /** Handle form submission */
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -33,6 +41,14 @@ export default function MessageInput({ onSend, disabled }) {
     if (!trimmed || disabled) return;
     onSend(trimmed);
     setDraft('');
+    // Reset textarea height after sending
+    if (inputRef.current) inputRef.current.style.height = 'auto';
+  };
+
+  /** Handle input changes and auto-resize */
+  const handleChange = (e) => {
+    setDraft(e.target.value);
+    autoResize();
   };
 
   /** Handle Enter key (Shift+Enter for newline) */
@@ -53,7 +69,7 @@ export default function MessageInput({ onSend, disabled }) {
         <textarea
           ref={inputRef}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={disabled ? 'Waiting for response...' : 'Type your message...'}
           disabled={disabled}

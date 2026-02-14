@@ -1,6 +1,6 @@
 {
   "name": "fliplet-ai-chatbot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "AI chatbot that interacts with the Fliplet REST API via tool calling to answer questions about data sources and files for a specific app.",
   "main": "src/index.js",
   "scripts": {

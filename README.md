@@ -101,8 +101,8 @@ fliplet-ai-chatbot/
 
 ## Prerequisites
 
-- **Node.js** ≥ 18.0.0 (for built-in `fetch`)
-- **OpenAI API key** ([get one here](https://platform.openai.com/api-keys))
+- **Node.js** ≥ 18.0.0 (for built-in `fetch`) — verify with `node -v`
+- **OpenAI API key** ([get one here](https://platform.openai.com/api-keys)) — requires billing enabled on your OpenAI account
 - **Fliplet API token** (Fliplet Studio → Your Profile → API Tokens)
 - **Fliplet App ID** (from the URL in Fliplet Studio: `studio.fliplet.com/app/<APP_ID>`)
 
@@ -120,7 +120,10 @@ npm install
 cd frontend && npm install && cd ..
 
 # 4. Configure environment variables
+# macOS / Linux:
 cp .env.example .env
+# Windows (PowerShell):
+# Copy-Item .env.example .env
 ```
 
 Edit `.env` with your values:
@@ -138,8 +141,10 @@ PORT=3000
 
 ### Web UI (React frontend + Express backend)
 
+> **Important:** Start the backend **before** the frontend — the Vite dev server proxies `/api/*` to the backend.
+
 ```bash
-# Terminal 1 — Start the backend server
+# Terminal 1 — Start the backend server (start this FIRST)
 npm run start:server
 # → Fliplet AI Chatbot server running on http://localhost:3000
 
@@ -302,6 +307,19 @@ Each step was built using **Test-Driven Development** (red → green → commit)
 | `npm run test:watch` | `jest --watch` | Backend tests (watch) |
 | `npm run test:coverage` | `jest --coverage` | Backend coverage report |
 | `npm run build:frontend` | `cd frontend && npm run build` | Production frontend build |
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `fetch is not defined` | Upgrade to Node.js ≥ 18.0.0 (`node -v` to check) |
+| `OPENAI_API_KEY is required` | Ensure `.env` file exists with a valid key |
+| Port 3000 already in use | Set a different port in `.env`: `PORT=3001` |
+| Frontend shows "Network Error" | Make sure the backend is running first on port 3000 |
+| Fliplet API returns 401 | Your `FLIPLET_API_TOKEN` may be expired — generate a new one |
+| `crypto.randomUUID is not a function` | Use a modern browser and access via `localhost` (secure context required) |
+
+> **Note:** The example session in the README shows illustrative output. Actual results will vary depending on your configured Fliplet app's data.
 
 ## License
 

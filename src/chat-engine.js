@@ -143,11 +143,30 @@ class ChatEngine {
       const messages = [this.getSystemPrompt(), ...this._history];
 
       // Call OpenAI API
-      const response = await this._openai.chat.completions.create({
-        model: this.model,
-        messages,
-        tools: this._tools.length > 0 ? this._tools : undefined,
-      });
+      let response;
+      try {
+        response = await this._openai.chat.completions.create({
+          model: this.model,
+          messages,
+          tools: this._tools.length > 0 ? this._tools : undefined,
+        });
+      } catch (apiError) {
+        // Translate OpenAI API errors into user-friendly messages
+        const userMessage =
+          apiError.status === 429
+            ? 'The AI service is temporarily overloaded. Please wait a moment and try again.'
+            : 'I encountered an error communicating with the AI service. Please try again.';
+
+        this._history.push({ role: 'assistant', content: userMessage });
+        return userMessage;
+      }
+
+      // Guard against empty choices (e.g. content filter rejection)
+      if (!response.choices || response.choices.length === 0) {
+        const noChoiceMsg = 'The AI returned an empty response. Please try rephrasing your question.';
+        this._history.push({ role: 'assistant', content: noChoiceMsg });
+        return noChoiceMsg;
+      }
 
       // Extract the assistant's message from the response
       const assistantMessage = response.choices[0].message;
@@ -158,10 +177,20 @@ class ChatEngine {
         this._history.push(assistantMessage);
 
         // Execute all tool calls concurrently for efficiency
-        const toolResults = await Promise.all(
+        // Use Promise.allSettled so one failing tool doesn't lose all results
+        const settledResults = await Promise.allSettled(
           assistantMessage.tool_calls.map(async (toolCall) => {
-            // Parse the JSON arguments string from OpenAI
-            const args = JSON.parse(toolCall.function.arguments);
+            // Safely parse the JSON arguments string from OpenAI
+            let args;
+            try {
+              args = JSON.parse(toolCall.function.arguments);
+            } catch {
+              return {
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: JSON.stringify({ error: 'Failed to parse tool arguments from the AI.' }),
+              };
+            }
 
             // Execute via the ToolExecutor
             const result = await this._toolExecutor.execute(toolCall.function.name, args);
@@ -175,6 +204,16 @@ class ChatEngine {
           })
         );
 
+        // Unwrap settled results — use error messages for rejected promises
+        const toolResults = settledResults.map((settled, index) => {
+          if (settled.status === 'fulfilled') return settled.value;
+          return {
+            role: 'tool',
+            tool_call_id: assistantMessage.tool_calls[index].id,
+            content: JSON.stringify({ error: 'Tool execution failed unexpectedly.' }),
+          };
+        });
+
         // Add all tool results to history
         this._history.push(...toolResults);
 
@@ -183,7 +222,8 @@ class ChatEngine {
       }
 
       // No tool calls — this is the final text response
-      const answerText = assistantMessage.content;
+      // Guard against null content (e.g. refusal or tool-only response)
+      const answerText = assistantMessage.content || 'I was unable to generate a response. Please try again.';
 
       // Add the assistant's text response to history
       this._history.push({ role: 'assistant', content: answerText });

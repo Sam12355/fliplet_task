@@ -17,17 +17,33 @@ import TypingIndicator from './TypingIndicator';
  * @param {object} props
  * @param {Array<{id: string, role: string, content: string}>} props.messages
  * @param {boolean} props.isLoading - Whether the AI is currently responding
+ * @param {(message: string) => void} [props.onSuggestionClick] - Handler for suggestion chip clicks
  */
-export default function MessageList({ messages, isLoading }) {
+export default function MessageList({ messages, isLoading, onSuggestionClick }) {
   const bottomRef = useRef(null);
+  const containerRef = useRef(null);
 
-  // Auto-scroll to bottom whenever messages change or loading state changes
+  // Smart auto-scroll: only scroll to bottom if user is already near the bottom
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = containerRef.current;
+    if (!container) return;
+
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    if (isNearBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isLoading]);
+
+  // Example queries to help users get started
+  const suggestions = [
+    'What data sources does this app have?',
+    'Show me the entries in the first data source',
+    'What media files are uploaded?',
+  ];
 
   return (
     <div
+      ref={containerRef}
       className="flex-1 overflow-y-auto p-4 chat-scrollbar"
       role="list"
       aria-label="Chat messages"
@@ -53,6 +69,20 @@ export default function MessageList({ messages, isLoading }) {
           <p className="text-sm mt-1">
             I can help you explore data sources and files in your Fliplet app.
           </p>
+          {/* Suggestion chips to help users get started */}
+          <div className="flex flex-wrap gap-2 mt-4 justify-center">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                onClick={() => onSuggestionClick?.(s)}
+                className="text-xs px-3 py-1.5 bg-white border border-gray-300 rounded-full
+                           text-gray-600 hover:bg-primary-50 hover:border-primary-300
+                           hover:text-primary-700 transition-colors"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

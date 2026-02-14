@@ -37,11 +37,18 @@ function createServer({ sessionManager }) {
   // Middleware
   // ---------------------------------------------------------------
 
-  // Parse JSON request bodies
-  app.use(express.json());
+  // Parse JSON request bodies (limit size to prevent memory exhaustion)
+  app.use(express.json({ limit: '100kb' }));
 
-  // Enable CORS for all origins (frontend may be on a different port)
-  app.use(cors());
+  // Enable CORS — restrict to localhost origins in development
+  app.use(cors({
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000',
+    ],
+  }));
 
   // ---------------------------------------------------------------
   // Routes
@@ -73,6 +80,14 @@ function createServer({ sessionManager }) {
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return res.status(400).json({
           error: 'A non-empty "message" string is required in the request body.',
+        });
+      }
+
+      // Cap message length to prevent excessive token usage
+      const MAX_MESSAGE_LENGTH = 4000;
+      if (message.length > MAX_MESSAGE_LENGTH) {
+        return res.status(400).json({
+          error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters.`,
         });
       }
 
@@ -134,9 +149,12 @@ function createServer({ sessionManager }) {
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
-    console.error('Server error:', err.message);
+    // Log full error details server-side for debugging
+    console.error('Server error:', err.message, err.stack);
+
+    // Return a generic message to the client — never leak internal details
     res.status(500).json({
-      error: err.message || 'Internal server error',
+      error: 'An internal error occurred. Please try again.',
     });
   });
 

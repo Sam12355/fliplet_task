@@ -141,7 +141,8 @@ describe('Backend Proxy Server', () => {
         .send({ message: 'Hello', sessionId: 'sess-1' });
 
       expect(res.status).toBe(500);
-      expect(res.body.error).toContain('OpenAI rate limit');
+      // Error handler should return a generic message (never leak internals)
+      expect(res.body.error).toBe('An internal error occurred. Please try again.');
     });
   });
 
@@ -175,11 +176,13 @@ describe('Backend Proxy Server', () => {
   // ---------------------------------------------------------------
 
   describe('CORS', () => {
-    test('should include CORS headers in response', async () => {
-      const res = await request(app).get('/api/health');
+    test('should include CORS headers for allowed origins', async () => {
+      const res = await request(app)
+        .get('/api/health')
+        .set('Origin', 'http://localhost:5173');
 
-      // Express cors middleware sets this header
-      expect(res.headers['access-control-allow-origin']).toBeDefined();
+      // CORS headers set for allowed origins
+      expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173');
     });
   });
 
