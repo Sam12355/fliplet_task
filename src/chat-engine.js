@@ -18,6 +18,10 @@
 // The default maximum number of tool-call rounds before forcing a stop
 const DEFAULT_MAX_ITERATIONS = 10;
 
+// Maximum conversation history messages to retain (sliding window)
+// Keeps context manageable and avoids exceeding OpenAI's token limit
+const MAX_HISTORY_MESSAGES = 50;
+
 class ChatEngine {
   /**
    * Create a new ChatEngine.
@@ -112,6 +116,17 @@ class ChatEngine {
     this._history = [];
   }
 
+  /**
+   * Trim history to the sliding window limit to prevent unbounded growth.
+   * Preserves the most recent messages so the AI retains recent context.
+   * @private
+   */
+  _trimHistory() {
+    if (this._history.length > MAX_HISTORY_MESSAGES) {
+      this._history = this._history.slice(-MAX_HISTORY_MESSAGES);
+    }
+  }
+
   // ---------------------------------------------------------------
   // Main Chat Method
   // ---------------------------------------------------------------
@@ -132,6 +147,9 @@ class ChatEngine {
   async chat(userMessage) {
     // Add the user's message to conversation history
     this._history.push({ role: 'user', content: userMessage });
+
+    // Trim history to sliding window to prevent unbounded memory/token growth
+    this._trimHistory();
 
     // Iterative loop: keep going until we get a text response or hit max iterations
     let iterations = 0;

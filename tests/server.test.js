@@ -13,6 +13,9 @@
 const request = require('supertest');
 const { createServer } = require('../src/server');
 
+// Valid UUID v4 for tests
+const TEST_SESSION_ID = '550e8400-e29b-41d4-a716-446655440000';
+
 // ---------------------------------------------------------------
 // Mock ChatEngine factory
 // ---------------------------------------------------------------
@@ -76,11 +79,11 @@ describe('Backend Proxy Server', () => {
 
       const res = await request(app)
         .post('/api/chat')
-        .send({ message: 'How many data sources?', sessionId: 'sess-1' });
+        .send({ message: 'How many data sources?', sessionId: TEST_SESSION_ID });
 
       expect(res.status).toBe(200);
       expect(res.body.response).toBe('There are 3 data sources.');
-      expect(res.body.sessionId).toBe('sess-1');
+      expect(res.body.sessionId).toBe(TEST_SESSION_ID);
     });
 
     test('should create a new session if sessionId is not provided', async () => {
@@ -128,7 +131,7 @@ describe('Backend Proxy Server', () => {
 
       await request(app)
         .post('/api/chat')
-        .send({ message: 'Tell me about users', sessionId: 'sess-1' });
+        .send({ message: 'Tell me about users', sessionId: TEST_SESSION_ID });
 
       expect(mockEngine.chat).toHaveBeenCalledWith('Tell me about users');
     });
@@ -138,11 +141,20 @@ describe('Backend Proxy Server', () => {
 
       const res = await request(app)
         .post('/api/chat')
-        .send({ message: 'Hello', sessionId: 'sess-1' });
+        .send({ message: 'Hello', sessionId: TEST_SESSION_ID });
 
       expect(res.status).toBe(500);
       // Error handler should return a generic message (never leak internals)
       expect(res.body.error).toBe('An internal error occurred. Please try again.');
+    });
+
+    test('should return 400 if sessionId is not a valid UUID', async () => {
+      const res = await request(app)
+        .post('/api/chat')
+        .send({ message: 'Hello', sessionId: 'invalid-session' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('Invalid sessionId');
     });
   });
 
@@ -154,7 +166,7 @@ describe('Backend Proxy Server', () => {
     test('should reset the chat engine for the given session', async () => {
       const res = await request(app)
         .post('/api/reset')
-        .send({ sessionId: 'sess-1' });
+        .send({ sessionId: TEST_SESSION_ID });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);

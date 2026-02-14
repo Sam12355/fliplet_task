@@ -33,6 +33,10 @@ vi.stubGlobal('crypto', {
 beforeEach(() => {
   vi.clearAllMocks();
   uuidCounter = 0;
+  // Clear sessionStorage to ensure clean state for each test
+  sessionStorage.clear();
+  // Mock window.confirm to always return true (for reset confirmation)
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 
 describe('App', () => {

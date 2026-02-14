@@ -49,9 +49,25 @@ class FlipletApiClient {
    * @param {Function} [fetchFn=global.fetch] - Fetch implementation (injectable for testing)
    */
   constructor(config, fetchFn) {
-    // Fail fast if config is missing
+    // Fail fast if config is missing or incomplete
     if (!config) {
       throw new Error('FlipletApiClient requires a config object');
+    }
+    if (!config.flipletApiUrl) {
+      throw new Error('FlipletApiClient requires config.flipletApiUrl');
+    }
+    if (!config.flipletApiToken) {
+      throw new Error('FlipletApiClient requires config.flipletApiToken');
+    }
+    if (!config.flipletAppId) {
+      throw new Error('FlipletApiClient requires config.flipletAppId');
+    }
+
+    // Validate URL format
+    try {
+      new URL(config.flipletApiUrl);
+    } catch {
+      throw new Error(`Invalid flipletApiUrl: "${config.flipletApiUrl}". Must be a valid URL.`);
     }
 
     // Store config values as instance properties

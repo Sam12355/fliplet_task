@@ -10,6 +10,34 @@
 
 const API_BASE = '/api'; // Vite proxy forwards to http://localhost:3000
 
+// Request timeout (60s) — prevents infinite loading if backend hangs
+const REQUEST_TIMEOUT_MS = 60000;
+
+/**
+ * Fetch wrapper with timeout support via AbortController.
+ *
+ * @param {string} url - Request URL
+ * @param {RequestInit} options - Fetch options
+ * @returns {Promise<Response>}
+ * @throws {Error} On timeout or network failure
+ */
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. The server may be busy — please try again.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 /**
  * Send a user message and receive the AI response.
  *
@@ -22,7 +50,7 @@ export async function sendMessage(message, sessionId = null) {
   const body = { message };
   if (sessionId) body.sessionId = sessionId;
 
-  const res = await fetch(`${API_BASE}/chat`, {
+  const res = await fetchWithTimeout(`${API_BASE}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -44,7 +72,7 @@ export async function sendMessage(message, sessionId = null) {
  * @throws {Error} On network failure
  */
 export async function resetSession(sessionId) {
-  const res = await fetch(`${API_BASE}/reset`, {
+  const res = await fetchWithTimeout(`${API_BASE}/reset`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionId }),

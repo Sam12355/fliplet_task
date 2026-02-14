@@ -44,11 +44,11 @@ describe('sendMessage', () => {
 
     const result = await sendMessage('Hi', 'sess-1');
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/chat', {
+    expect(global.fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: 'Hi', sessionId: 'sess-1' }),
-    });
+    }));
     expect(result).toEqual({ response: 'Hello!', sessionId: 'sess-1' });
   });
 
@@ -85,11 +85,11 @@ describe('resetSession', () => {
 
     const result = await resetSession('sess-1');
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/reset', {
+    expect(global.fetch).toHaveBeenCalledWith('/api/reset', expect.objectContaining({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId: 'sess-1' }),
-    });
+    }));
     expect(result).toEqual({ success: true });
   });
 

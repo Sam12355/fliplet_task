@@ -19,6 +19,11 @@
 
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+// UUID v4 pattern for session ID validation
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * Create and configure the Express application.
@@ -37,6 +42,9 @@ function createServer({ sessionManager }) {
   // Middleware
   // ---------------------------------------------------------------
 
+  // Security headers (X-Content-Type-Options, X-Frame-Options, HSTS, etc.)
+  app.use(helmet());
+
   // Parse JSON request bodies (limit size to prevent memory exhaustion)
   app.use(express.json({ limit: '100kb' }));
 
@@ -48,6 +56,16 @@ function createServer({ sessionManager }) {
       'http://127.0.0.1:5173',
       'http://127.0.0.1:3000',
     ],
+  }));
+
+  // Rate limiting — prevent abuse and runaway OpenAI costs
+  // 30 chat requests per minute per IP
+  app.use('/api/chat', rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Please wait a moment before trying again.' },
   }));
 
   // ---------------------------------------------------------------
@@ -88,6 +106,13 @@ function createServer({ sessionManager }) {
       if (message.length > MAX_MESSAGE_LENGTH) {
         return res.status(400).json({
           error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters.`,
+        });
+      }
+
+      // Validate session ID format if provided (must be UUID v4)
+      if (requestedSessionId && !UUID_REGEX.test(requestedSessionId)) {
+        return res.status(400).json({
+          error: 'Invalid sessionId format. Must be a valid UUID.',
         });
       }
 

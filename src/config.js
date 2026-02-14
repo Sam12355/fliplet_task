@@ -33,6 +33,11 @@ function loadConfig() {
     port: parseInt(process.env.PORT, 10) || 3000,
   };
 
+  // Validate PORT is in valid range
+  if (config.port < 1 || config.port > 65535 || isNaN(config.port)) {
+    throw new Error(`Invalid PORT value: "${process.env.PORT}". Must be between 1 and 65535.`);
+  }
+
   // Validate required fields
   const required = ['openaiApiKey', 'flipletApiToken', 'flipletAppId'];
   const missing = required.filter((key) => !config[key]);

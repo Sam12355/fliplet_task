@@ -13,21 +13,33 @@
  *   - Unique message IDs via crypto.randomUUID()
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import ChatWindow from './components/ChatWindow';
 import { sendMessage, resetSession } from './services/api';
 
 /** Generate a unique ID for each message (for React keys) */
 const uid = () => crypto.randomUUID();
 
+/** Session storage key for persisting session ID across page refreshes */
+const SESSION_KEY = 'fliplet-chat-session-id';
+
 export default function App() {
   // ---------------------------------------------------------------
-  // State
+  // State — sessionId restored from sessionStorage when available
   // ---------------------------------------------------------------
   const [messages, setMessages] = useState([]);
-  const [sessionId, setSessionId] = useState(null);
+  const [sessionId, setSessionId] = useState(() => sessionStorage.getItem(SESSION_KEY));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Persist sessionId to sessionStorage whenever it changes
+  useEffect(() => {
+    if (sessionId) {
+      sessionStorage.setItem(SESSION_KEY, sessionId);
+    } else {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+  }, [sessionId]);
 
   // ---------------------------------------------------------------
   // Handlers
@@ -73,6 +85,10 @@ export default function App() {
    * the server to discard the session's history.
    */
   const handleReset = useCallback(async () => {
+    // Confirm before discarding conversation
+    if (messages.length > 0 && !window.confirm('Start a new conversation? Current chat will be lost.')) {
+      return;
+    }
     if (sessionId) {
       try {
         await resetSession(sessionId);
@@ -83,10 +99,22 @@ export default function App() {
     setMessages([]);
     setSessionId(null);
     setError(null);
-  }, [sessionId]);
+  }, [sessionId, messages.length]);
 
   /** Dismiss the error banner */
   const handleDismissError = useCallback(() => setError(null), []);
+
+  /** Retry sending the last failed user message */
+  const handleRetry = useCallback(() => {
+    // Find the last user message (the one that failed)
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+    if (lastUserMsg) {
+      // Remove it from messages and re-send
+      setMessages((prev) => prev.filter((m) => m.id !== lastUserMsg.id));
+      setError(null);
+      handleSend(lastUserMsg.content);
+    }
+  }, [messages, handleSend]);
 
   // ---------------------------------------------------------------
   // Render
@@ -102,6 +130,7 @@ export default function App() {
           onReset={handleReset}
           error={error}
           onDismissError={handleDismissError}
+          onRetry={handleRetry}
         />
       </div>
     </main>
