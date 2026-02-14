@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "start:server": "node src/start-server.js",
+    "start:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
     "test": "jest --verbose",
     "test:watch": "jest --watch --verbose",
     "test:coverage": "jest --coverage --verbose"
