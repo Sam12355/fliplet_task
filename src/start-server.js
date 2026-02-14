@@ -22,7 +22,7 @@ const config = loadConfig();
 
 /** Factory that creates a real ChatEngine for each session */
 function engineFactory() {
-  const { chatEngine } = createApp();
+  const { chatEngine } = createApp(config);
   return chatEngine;
 }
 
