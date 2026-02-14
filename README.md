@@ -15,7 +15,7 @@ Ask questions in plain English — the AI queries the real Fliplet API and retur
 - **REST API backend** — Express server with session management
 - **CLI interface** — interactive terminal mode for quick testing
 - **Error handling** — API errors are explained by the AI in plain language
-- **167 tests** — full TDD coverage across backend (Jest) and frontend (Vitest + RTL)
+- **167+ tests** — full TDD coverage across backend (Jest) and frontend (Vitest + RTL)
 
 ## Architecture
 
@@ -85,7 +85,8 @@ fliplet-ai-chatbot/
 │   │   │   ├── ChatMessage.jsx     # Message bubble (Markdown for AI)
 │   │   │   ├── MessageInput.jsx    # Textarea + send button
 │   │   │   ├── TypingIndicator.jsx # Animated dots
-│   │   │   └── *.test.jsx          # Component tests (22 tests)
+│   │   │   ├── ErrorBoundary.jsx   # Catches render-time errors
+│   │   │   └── *.test.jsx          # Component tests
 │   │   └── services/
 │   │       ├── api.js              # HTTP client for backend
 │   │       └── api.test.js         # API service tests (9 tests)
@@ -103,8 +104,10 @@ fliplet-ai-chatbot/
 
 - **Node.js** ≥ 18.0.0 (for built-in `fetch`) — verify with `node -v`
 - **OpenAI API key** ([get one here](https://platform.openai.com/api-keys)) — requires billing enabled on your OpenAI account
-- **Fliplet API token** (Fliplet Studio → Your Profile → API Tokens)
+- **Fliplet API token** (Fliplet Studio → Your Profile → API Tokens, or run `npm run refresh-token`)
 - **Fliplet App ID** (from the URL in Fliplet Studio: `studio.fliplet.com/app/<APP_ID>`)
+
+> **Token Expiration:** Fliplet session tokens may expire after inactivity. If the app returns 401 errors, run `npm run refresh-token` to authenticate and get a fresh token automatically.
 
 ## Setup
 
@@ -306,6 +309,7 @@ Each step was built using **Test-Driven Development** (red → green → commit)
 | `npm test` | `jest --verbose` | Backend tests |
 | `npm run test:watch` | `jest --watch` | Backend tests (watch) |
 | `npm run test:coverage` | `jest --coverage` | Backend coverage report |
+| `npm run refresh-token` | `node scripts/refresh-token.js` | Refresh expired Fliplet token |
 | `npm run build:frontend` | `cd frontend && npm run build` | Production frontend build |
 
 ## Troubleshooting
@@ -316,7 +320,7 @@ Each step was built using **Test-Driven Development** (red → green → commit)
 | `OPENAI_API_KEY is required` | Ensure `.env` file exists with a valid key |
 | Port 3000 already in use | Set a different port in `.env`: `PORT=3001` |
 | Frontend shows "Network Error" | Make sure the backend is running first on port 3000 |
-| Fliplet API returns 401 | Your `FLIPLET_API_TOKEN` may be expired — generate a new one |
+| Fliplet API returns 401 | Your `FLIPLET_API_TOKEN` may be expired — run `npm run refresh-token` to get a fresh one |
 | `crypto.randomUUID is not a function` | Use a modern browser and access via `localhost` (secure context required) |
 
 > **Note:** The example session in the README shows illustrative output. Actual results will vary depending on your configured Fliplet app's data.

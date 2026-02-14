@@ -15,6 +15,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import ChatWindow from './components/ChatWindow';
+import ErrorBoundary from './components/ErrorBoundary';
 import { sendMessage, resetSession } from './services/api';
 
 /** Generate a unique ID for each message (for React keys) */
@@ -123,15 +124,17 @@ export default function App() {
   return (
     <main className="h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-100 to-gray-200">
       <div className="w-full max-w-2xl h-[90vh]">
-        <ChatWindow
-          messages={messages}
-          isLoading={isLoading}
-          onSend={handleSend}
-          onReset={handleReset}
-          error={error}
-          onDismissError={handleDismissError}
-          onRetry={handleRetry}
-        />
+        <ErrorBoundary>
+          <ChatWindow
+            messages={messages}
+            isLoading={isLoading}
+            onSend={handleSend}
+            onReset={handleReset}
+            error={error}
+            onDismissError={handleDismissError}
+            onRetry={handleRetry}
+          />
+        </ErrorBoundary>
       </div>
     </main>
   );

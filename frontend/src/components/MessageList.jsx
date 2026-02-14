@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import ChatMessage from './ChatMessage';
 import TypingIndicator from './TypingIndicator';
 
@@ -99,3 +100,18 @@ export default function MessageList({ messages, isLoading, onSuggestionClick }) 
     </div>
   );
 }
+
+MessageList.propTypes = {
+  /** Array of chat message objects */
+  messages: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      role: PropTypes.oneOf(['user', 'assistant']).isRequired,
+      content: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  /** Whether the AI is currently responding */
+  isLoading: PropTypes.bool.isRequired,
+  /** Handler when a suggestion chip is clicked */
+  onSuggestionClick: PropTypes.func,
+};

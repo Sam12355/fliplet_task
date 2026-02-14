@@ -3,9 +3,14 @@
  *
  * Animated dots shown while the AI is processing a response.
  * Uses CSS keyframe animation defined in index.css.
+ *
+ * Wrapped in React.memo — this component has no props, so it
+ * never needs to re-render once mounted.
  */
 
-export default function TypingIndicator() {
+import { memo } from 'react';
+
+const TypingIndicator = memo(function TypingIndicator() {
   return (
     <div className="flex items-start gap-3 mb-4" role="status" aria-label="AI is thinking">
       {/* Avatar */}
@@ -23,4 +28,6 @@ export default function TypingIndicator() {
       </div>
     </div>
   );
-}
+});
+
+export default TypingIndicator;

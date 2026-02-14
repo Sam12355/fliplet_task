@@ -8,6 +8,7 @@
  * while header and input stay pinned.
  */
 
+import PropTypes from 'prop-types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 
@@ -101,3 +102,26 @@ export default function ChatWindow({ messages, isLoading, onSend, onReset, error
     </div>
   );
 }
+
+ChatWindow.propTypes = {
+  /** Array of chat message objects */
+  messages: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      role: PropTypes.oneOf(['user', 'assistant']).isRequired,
+      content: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  /** Whether the AI is currently responding */
+  isLoading: PropTypes.bool.isRequired,
+  /** Callback when user sends a message */
+  onSend: PropTypes.func.isRequired,
+  /** Callback to reset the conversation */
+  onReset: PropTypes.func.isRequired,
+  /** Current error message (null if no error) */
+  error: PropTypes.string,
+  /** Callback to dismiss the error banner */
+  onDismissError: PropTypes.func,
+  /** Callback to retry the last failed message */
+  onRetry: PropTypes.func,
+};

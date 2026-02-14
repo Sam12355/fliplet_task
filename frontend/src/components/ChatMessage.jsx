@@ -8,6 +8,8 @@
  * (lists, code blocks, bold) displays properly.
  */
 
+import { memo } from 'react';
+import PropTypes from 'prop-types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -26,7 +28,7 @@ const markdownComponents = {
  * @param {'user'|'assistant'} props.role - Message sender
  * @param {string} props.content - Message text (markdown for assistant)
  */
-export default function ChatMessage({ role, content }) {
+const ChatMessage = memo(function ChatMessage({ role, content }) {
   const isUser = role === 'user';
 
   return (
@@ -65,4 +67,13 @@ export default function ChatMessage({ role, content }) {
       </div>
     </div>
   );
-}
+});
+
+ChatMessage.propTypes = {
+  /** Message sender — determines alignment and styling */
+  role: PropTypes.oneOf(['user', 'assistant']).isRequired,
+  /** Message text content (rendered as Markdown for assistant messages) */
+  content: PropTypes.string.isRequired,
+};
+
+export default ChatMessage;

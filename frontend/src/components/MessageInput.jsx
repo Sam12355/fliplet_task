@@ -9,6 +9,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * @param {object} props
@@ -117,3 +118,10 @@ export default function MessageInput({ onSend, disabled }) {
     </form>
   );
 }
+
+MessageInput.propTypes = {
+  /** Callback when user sends a message */
+  onSend: PropTypes.func.isRequired,
+  /** Whether input should be disabled (AI is thinking) */
+  disabled: PropTypes.bool.isRequired,
+};

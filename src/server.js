@@ -21,9 +21,13 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 
 // UUID v4 pattern for session ID validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Control characters except newline (\n), carriage return (\r), and tab (\t)
+const CONTROL_CHAR_REGEX = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g;
 
 /**
  * Create and configure the Express application.
@@ -44,6 +48,12 @@ function createServer({ sessionManager }) {
 
   // Security headers (X-Content-Type-Options, X-Frame-Options, HSTS, etc.)
   app.use(helmet());
+
+  // Request correlation ID — attach a unique ID to every request for tracing
+  app.use((req, _res, next) => {
+    req.id = crypto.randomUUID();
+    next();
+  });
 
   // Parse JSON request bodies (limit size to prevent memory exhaustion)
   app.use(express.json({ limit: '100kb' }));
@@ -122,8 +132,11 @@ function createServer({ sessionManager }) {
       // Get (or create) the ChatEngine for this session
       const engine = sessionManager.getOrCreate(sessionId);
 
+      // Sanitize: strip control characters (keep newlines, tabs)
+      const sanitizedMessage = message.trim().replace(CONTROL_CHAR_REGEX, '');
+
       // Send the message to the AI and await the response
-      const response = await engine.chat(message.trim());
+      const response = await engine.chat(sanitizedMessage);
 
       res.json({ response, sessionId });
     } catch (err) {
@@ -173,9 +186,9 @@ function createServer({ sessionManager }) {
   // ---------------------------------------------------------------
 
   // eslint-disable-next-line no-unused-vars
-  app.use((err, _req, res, _next) => {
-    // Log full error details server-side for debugging
-    console.error('Server error:', err.message, err.stack);
+  app.use((err, req, res, _next) => {
+    // Log full error details server-side for debugging (includes request ID for tracing)
+    console.error(`[${req.id}] Server error:`, err.message, err.stack);
 
     // Return a generic message to the client — never leak internal details
     res.status(500).json({
