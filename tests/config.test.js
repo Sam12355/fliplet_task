@@ -53,8 +53,8 @@ describe('Config Loader', () => {
   });
 
   test('should throw when OPENAI_API_KEY is missing', () => {
-    // Arrange — omit OPENAI_API_KEY
-    delete process.env.OPENAI_API_KEY;
+    // Arrange — set to empty so dotenv won't override from .env
+    process.env.OPENAI_API_KEY = '';
     process.env.FLIPLET_API_TOKEN = 'test-token';
     process.env.FLIPLET_APP_ID = '123';
 
@@ -64,9 +64,9 @@ describe('Config Loader', () => {
   });
 
   test('should throw when FLIPLET_API_TOKEN is missing', () => {
-    // Arrange
+    // Arrange — set to empty so dotenv won't override from .env
     process.env.OPENAI_API_KEY = 'test-key';
-    delete process.env.FLIPLET_API_TOKEN;
+    process.env.FLIPLET_API_TOKEN = '';
     process.env.FLIPLET_APP_ID = '123';
 
     // Act & Assert
@@ -75,10 +75,10 @@ describe('Config Loader', () => {
   });
 
   test('should throw when FLIPLET_APP_ID is missing', () => {
-    // Arrange
+    // Arrange — set to empty so dotenv won't override from .env
     process.env.OPENAI_API_KEY = 'test-key';
     process.env.FLIPLET_API_TOKEN = 'test-token';
-    delete process.env.FLIPLET_APP_ID;
+    process.env.FLIPLET_APP_ID = '';
 
     // Act & Assert
     const { loadConfig } = require('../src/config');

@@ -7,14 +7,18 @@
 
 const path = require('path');
 
-// Load .env file from project root
-require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
-
 /**
  * Validated application configuration.
  * Throws on missing required values to fail fast.
+ *
+ * Loads .env inside loadConfig() so that tests can control
+ * process.env before calling this function.
  */
 function loadConfig() {
+  // Load .env from project root. dotenv won't override vars that
+  // already exist in process.env, so pre-set env vars take priority.
+  require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
+
   const config = {
     // OpenAI settings
     openaiApiKey: process.env.OPENAI_API_KEY,
